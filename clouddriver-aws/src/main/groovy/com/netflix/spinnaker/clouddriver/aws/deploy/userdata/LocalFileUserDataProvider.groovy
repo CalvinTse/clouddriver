@@ -24,6 +24,7 @@ import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerNetworkException
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
+import org.springframework.http.HttpStatus
 
 class LocalFileUserDataProvider implements UserDataProvider {
   private static final INSERTION_MARKER = '\nexport EC2_REGION='
@@ -54,6 +55,13 @@ class LocalFileUserDataProvider implements UserDataProvider {
         return Boolean.valueOf(application.legacyUdf)
       } catch (NotFoundException e) {
         return localFileUserDataProperties.defaultLegacyUdf
+      } catch (SpinnakerHttpException e) {
+        // If the error is of type SpinnakerHttpException and the response status is NOT_FOUND
+        // return localFileUserDataProperties.defaultLegacyUdf
+        if (e.getResponse().getStatus() == HttpStatus.NOT_FOUND.value()) {
+          return localFileUserDataProperties.defaultLegacyUdf
+        }
+        throw e
       } catch (SpinnakerServerException e) {
         throw e
       }
